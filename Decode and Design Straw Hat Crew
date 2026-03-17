@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INSOMNIA — 3:00 AM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --black: #050508;
+    --red: #c0392b;
+    --red-glow: #ff2a1a;
+    --dim-red: #7a1a1a;
+    --cream: #e8ddd0;
+    --muted: #5a4a4a;
+    --white: #f0e8e8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--cream);
+    font-family: 'Space Mono', monospace;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ── CURSOR ── */
+  #cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--red-glow);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: screen;
+    transition: transform 0.15s ease;
+    box-shadow: 0 0 18px var(--red-glow), 0 0 40px rgba(255,42,26,0.4);
+  }
+  #cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(192,57,43,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transition: left 0.12s ease, top 0.12s ease;
+  }
+
+  /* ── GRAIN ── */
+  .grain {
+    position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+    opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    animation: grain-shift 0.3s steps(2) infinite;
+  }
+  @keyframes grain-shift {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-3px,2px); }
+    50% { transform: translate(2px,-3px); }
+    75% { transform: translate(-2px,-2px); }
+    100% { transform: translate(3px,2px); }
+  }
+
+  /* ── SCANLINES ── */
+  .scanlines {
+    position: fixed; inset: 0; z-index: 999; pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
+    );
+  }
+
+  /* ── VIGNETTE ── */
+  .vignette {
+    position: fixed; inset: 0; z-index: 998; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.85) 100%);
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .clock-strip {
+    position: absolute; top: 2rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; letter-spacing: 0.35em; color: var(--dim-red);
+    text-transform: uppercase;
+    animation: flicker 5s infinite;
+  }
+
+  #live-clock {
+    font-size: 5rem;
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    color: var(--red-glow);
+    text-shadow: 0 0 30px rgba(255,42,26,0.6), 0 0 80px rgba(255,42,26,0.2);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    animation: pulse-clock 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-clock {
+    0%, 100% { text-shadow: 0 0 30px rgba(255,42,26,0.6), 0 0 80px rgba(255,42,26,0.2); }
+    50% { text-shadow: 0 0 50px rgba(255,42,26,0.9), 0 0 120px rgba(255,42,26,0.4); }
+  }
+
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    font-style: italic;
+    color: var(--cream);
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+    margin-top: 1rem;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: rise 1.2s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
+  }
+
+  .hero-sub {
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 1.5rem;
+    opacity: 0;
+    animation: rise 1s ease 0.8s forwards;
+  }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Floating thought bubbles in hero */
+  .thought-bubble {
+    position: absolute;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim-red);
+    opacity: 0;
+    pointer-events: none;
+    font-style: italic;
+    animation: bubble-float linear forwards;
+  }
+  @keyframes bubble-float {
+    0% { opacity: 0; transform: translateY(0) scale(0.9); }
+    15% { opacity: 0.7; }
+    85% { opacity: 0.4; }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.05); }
+  }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.6rem; letter-spacing: 0.3em; color: var(--muted);
+    text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    animation: blink 3s infinite;
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--dim-red), transparent);
+    animation: grow-line 3s infinite;
+  }
+  @keyframes grow-line {
+    0%, 100% { height: 20px; opacity: 0.3; }
+    50% { height: 40px; opacity: 1; }
+  }
+
+  /* ── SECTIONS SHARED ── */
+  section {
+    position: relative;
+    padding: 7rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.5em;
+    color: var(--dim-red);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .section-label::before {
+    content: '';
+    display: block; width: 40px; height: 1px;
+    background: var(--dim-red);
+  }
+
+  /* ── SYMPTOMS ── */
+  #symptoms { padding-top: 4rem; }
+
+  .symptoms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    border: 1px solid rgba(192,57,43,0.15);
+    margin-top: 1rem;
+  }
+
+  .symptom-card {
+    padding: 2.5rem 2rem;
+    border: 1px solid rgba(192,57,43,0.1);
+    background: rgba(5,5,8,0.8);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s;
+  }
+  .symptom-card:hover { background: rgba(122,26,26,0.12); }
+  .symptom-card:hover .symptom-num { color: var(--red-glow); }
+
+  .symptom-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 4rem;
+    font-style: italic;
+    color: rgba(192,57,43,0.2);
+    line-height: 1;
+    transition: color 0.4s;
+  }
+  .symptom-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin: 0.5rem 0;
+  }
+  .symptom-desc {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── TIMELINE ── */
+  #timeline { border-top: 1px solid rgba(192,57,43,0.15); }
+
+  .big-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-style: italic;
+    color: var(--cream);
+    line-height: 1;
+    margin-bottom: 3rem;
+  }
+  .big-heading span { color: var(--red-glow); }
+
+  .timeline-track {
+    position: relative;
+    padding-left: 2rem;
+    border-left: 1px solid rgba(192,57,43,0.2);
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 3rem;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .tl-item.visible { opacity: 1; transform: translateX(0); }
+
+  .tl-dot {
+    position: absolute;
+    left: -2.35rem;
+    top: 0.35rem;
+    width: 8px; height: 8px;
+    background: var(--dim-red);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--red-glow);
+  }
+  .tl-time {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--dim-red);
+    margin-bottom: 0.3rem;
+  }
+  .tl-event {
+    font-size: 1rem;
+    color: var(--cream);
+    margin-bottom: 0.3rem;
+  }
+  .tl-detail {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.8;
+    font-style: italic;
+  }
+
+  /* ── MIND STATIC ── */
+  #mind-static {
+    text-align: center;
+    padding: 8rem 2rem;
+    border-top: 1px solid rgba(192,57,43,0.15);
+    border-bottom: 1px solid rgba(192,57,43,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .static-thoughts {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .static-word {
+    position: absolute;
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    color: rgba(192,57,43,0.08);
+    white-space: nowrap;
+    animation: drift linear infinite;
+    font-size: 1.5rem;
+  }
+  @keyframes drift {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100vw); }
+  }
+
+  .static-center {
+    position: relative; z-index: 2;
+    max-width: 600px; margin: 0 auto;
+  }
+
+  .static-center h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-style: italic;
+    color: var(--cream);
+    line-height: 1.1;
+    margin-bottom: 2rem;
+  }
+
+  .static-center p {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 2;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── EYE SECTION ── */
+  #eye-section {
+    text-align: center;
+    padding: 6rem 2rem;
+    border-top: 1px solid rgba(192,57,43,0.1);
+  }
+
+  .eye-container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin: 3rem 0;
+  }
+
+  .big-eye {
+    width: 160px; height: 75px;
+    background: #000;
+    border: 2px solid var(--red-glow);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: inset 0 0 40px #330000,
+                0 0 20px rgba(255,42,26,0.3),
+                0 0 60px rgba(255,42,26,0.1);
+    overflow: hidden;
+    animation: eye-twitch 7s ease-in-out infinite;
+  }
+
+  @keyframes eye-twitch {
+    0%, 95%, 100% { transform: scaleY(1); }
+    96% { transform: scaleY(0.05); }
+    97% { transform: scaleY(1); }
+  }
+
+  .big-pupil {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px; height: 30px;
+    background: radial-gradient(circle, #ff1a00 0%, #800000 60%, #000 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 25px var(--red-glow);
+    animation: pupil-drift 4s ease-in-out infinite;
+  }
+
+  @keyframes pupil-drift {
+    0%, 100% { transform: translate(-50%, -50%); }
+    25% { transform: translate(-35%, -55%); }
+    50% { transform: translate(-60%, -45%); }
+    75% { transform: translate(-45%, -60%); }
+  }
+
+  .eye-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--dim-red);
+    text-transform: uppercase;
+    margin-top: 1.5rem;
+  }
+
+  /* ── STATS BAR ── */
+  #stats {
+    border-top: 1px solid rgba(192,57,43,0.15);
+    padding: 5rem 2rem;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .stat-item { text-align: center; }
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3.5rem;
+    font-style: italic;
+    color: var(--red-glow);
+    text-shadow: 0 0 30px rgba(255,42,26,0.4);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid rgba(192,57,43,0.15);
+    padding: 3rem 2rem;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .footer-text {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    color: var(--dim-red);
+  }
+  .footer-sub {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+
+  /* ── UTILS ── */
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.2; }
+    97% { opacity: 0.9; }
+    98% { opacity: 0.1; }
+    99% { opacity: 0.8; }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── MORNING MODE ── */
+  body.morning {
+    --black: #fdf6ee;
+    --red: #c8855a;
+    --red-glow: #e8924a;
+    --dim-red: #c8855a;
+    --cream: #3a2a1a;
+    --muted: #8a7060;
+    --white: #fff8f0;
+    background: #fdf6ee;
+    color: #3a2a1a;
+  }
+  body.morning .grain { opacity: 0.03; filter: sepia(1); }
+  body.morning .vignette { background: radial-gradient(ellipse at center, transparent 40%, rgba(255,220,170,0.4) 100%); }
+  body.morning .scanlines { opacity: 0.3; }
+  body.morning #live-clock {
+    color: #e8924a;
+    text-shadow: 0 0 30px rgba(232,146,74,0.4), 0 0 60px rgba(232,146,74,0.1);
+    animation: none;
+  }
+  body.morning .big-eye {
+    border-color: #e8924a;
+    box-shadow: inset 0 0 40px #f5d5a0, 0 0 20px rgba(232,146,74,0.2);
+  }
+  body.morning .big-pupil {
+    background: radial-gradient(circle, #e8924a 0%, #c8855a 60%, #8a5530 100%);
+    box-shadow: 0 0 20px rgba(232,146,74,0.5);
+  }
+  body.morning #cursor { background: #e8924a; box-shadow: 0 0 18px #e8924a; }
+  body.morning #cursor-ring { border-color: rgba(232,146,74,0.5); }
+  body.morning .symptom-card { background: rgba(255,248,240,0.8); }
+  body.morning .symptom-card:hover { background: rgba(232,146,74,0.08); }
+  body.morning .marquee-item { color: #c8855a; }
+
+  /* morning sunrise overlay */
+  #morning-overlay {
+    position: fixed; inset: 0; z-index: 990; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 110%, rgba(255,180,80,0.25) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 3s ease;
+  }
+  body.morning #morning-overlay { opacity: 1; }
+
+  /* morning text swap */
+  .night-text { display: block; }
+  .morning-text { display: none; }
+  body.morning .night-text { display: none; }
+  body.morning .morning-text { display: block; }
+
+  /* ── CONTROL BUTTONS ── */
+  #controls {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    z-index: 5000;
+  }
+
+  .ctrl-btn {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    background: rgba(5,5,8,0.85);
+    border: 1px solid rgba(192,57,43,0.3);
+    color: var(--dim-red);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  .ctrl-btn:hover {
+    background: rgba(122,26,26,0.3);
+    border-color: var(--red-glow);
+    color: var(--cream);
+  }
+  .ctrl-btn.active {
+    background: rgba(122,26,26,0.4);
+    border-color: var(--red-glow);
+    color: var(--red-glow);
+  }
+  body.morning .ctrl-btn {
+    background: rgba(253,246,238,0.9);
+    border-color: rgba(200,133,90,0.4);
+    color: #c8855a;
+  }
+  body.morning .ctrl-btn:hover, body.morning .ctrl-btn.active {
+    background: rgba(232,146,74,0.15);
+    border-color: #e8924a;
+    color: #3a2a1a;
+  }
+
+  .ctrl-icon { font-size: 0.85rem; }
+
+  /* morning mode transition on all colors */
+  body, .symptom-card, #live-clock, .big-eye, .big-pupil,
+  .section-label, .tl-dot, .stat-num, .footer-text,
+  .grain, .vignette, #cursor, #cursor-ring {
+    transition: background 2.5s ease, color 2.5s ease,
+                border-color 2.5s ease, box-shadow 2.5s ease,
+                text-shadow 2.5s ease, opacity 2.5s ease;
+  }
+
+  /* ── HORIZONTAL MARQUEE ── */
+  .marquee-wrap {
+    overflow: hidden;
+    border-top: 1px solid rgba(192,57,43,0.15);
+    border-bottom: 1px solid rgba(192,57,43,0.15);
+    padding: 1rem 0;
+    margin: 2rem 0;
+  }
+  .marquee-track {
+    display: flex; gap: 3rem;
+    animation: marquee 20s linear infinite;
+    white-space: nowrap;
+  }
+  .marquee-item {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--dim-red);
+    flex-shrink: 0;
+  }
+  .marquee-dot { color: var(--red-glow); margin: 0 0.5rem; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div id="morning-overlay"></div>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- CONTROLS -->
+<div id="controls">
+  <button class="ctrl-btn" id="sound-btn" onclick="toggleSound()">
+    <span class="ctrl-icon" id="sound-icon">🔇</span>
+    <span id="sound-label">Ambient Sound</span>
+  </button>
+  <button class="ctrl-btn" id="morning-btn" onclick="toggleMorning()">
+    <span class="ctrl-icon" id="morning-icon">🌙</span>
+    <span id="morning-label">Night Mode</span>
+  </button>
+</div>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="clock-strip">Current time —</div>
+  <div id="live-clock">3:47 AM</div>
+  <h1 class="hero-title">
+    <span class="night-text">Insomnia</span>
+    <span class="morning-text">Morning</span>
+  </h1>
+  <p class="hero-sub">
+    <span class="night-text">When the night refuses to end</span>
+    <span class="morning-text">You made it through the dark</span>
+  </p>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    scroll
+  </div>
+</div>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee">
+    <span class="marquee-item">can't sleep <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">thoughts racing <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">3:00 AM again <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">eyes wide open <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">just five more minutes <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">ceiling staring back <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">body tired, mind awake <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">why am I awake <span class="marquee-dot">·</span></span>
+    <!-- duplicate for seamless -->
+    <span class="marquee-item">can't sleep <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">thoughts racing <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">3:00 AM again <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">eyes wide open <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">just five more minutes <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">ceiling staring back <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">body tired, mind awake <span class="marquee-dot">·</span></span>
+    <span class="marquee-item">why am I awake <span class="marquee-dot">·</span></span>
+  </div>
+</div>
+
+<!-- SYMPTOMS -->
+<section id="symptoms">
+  <div class="section-label">What it feels like</div>
+  <div class="symptoms-grid">
+    <div class="symptom-card">
+      <div class="symptom-num">01</div>
+      <div class="symptom-title">Hypervigilance</div>
+      <div class="symptom-desc">Every sound becomes enormous. The hum of the fridge. A car outside. Your own heartbeat.</div>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-num">02</div>
+      <div class="symptom-title">Racing Thoughts</div>
+      <div class="symptom-desc">Your mind rehearses old conversations, solves tomorrow's problems, replays every mistake.</div>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-num">03</div>
+      <div class="symptom-title">Time Distortion</div>
+      <div class="symptom-desc">An hour feels like five minutes. Five minutes feel like an eternity. The clock lies.</div>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-num">04</div>
+      <div class="symptom-title">The Almost</div>
+      <div class="symptom-desc">That moment of falling — then a jolt. Back awake. Start again. The hypnic jerk betrayal.</div>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-num">05</div>
+      <div class="symptom-title">Burning Eyes</div>
+      <div class="symptom-desc">Gritty. Heavy. Desperate for dark. But when you close them — the thoughts get louder.</div>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-num">06</div>
+      <div class="symptom-title">Counting Hours</div>
+      <div class="symptom-desc">"If I sleep now, I get 4 hours." Then 3. Then 2. The math becomes a horror show.</div>
+    </div>
+  </div>
+</section>
+
+<!-- EYE SECTION -->
+<div id="eye-section">
+  <div class="section-label" style="justify-content:center;">Wide open</div>
+  <div class="eye-container">
+    <div class="big-eye"><div class="big-pupil"></div></div>
+    <div class="big-eye" style="animation-delay:0.3s"><div class="big-pupil" style="animation-delay:1s"></div></div>
+  </div>
+  <p class="eye-label">They never really close</p>
+</div>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="section-label">A night in full</div>
+  <h2 class="big-heading">The <span>anatomy</span><br>of a sleepless night</h2>
+  <div class="timeline-track">
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">11:00 PM</div>
+      <div class="tl-event">Bed. Optimistic.</div>
+      <div class="tl-detail">You have tomorrow sorted. You deserve this. Sleep will come easily tonight.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">12:15 AM</div>
+      <div class="tl-event">Still awake.</div>
+      <div class="tl-detail">That's fine. Not everyone falls asleep in ten minutes. You'll drift off soon.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">1:30 AM</div>
+      <div class="tl-event">The thoughts arrive.</div>
+      <div class="tl-detail">The email from 2019. That thing you said in 2014. Why did you say that? Who does that?</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">2:47 AM</div>
+      <div class="tl-event">Phone check. Big mistake.</div>
+      <div class="tl-detail">The blue light sears. You've been awake for over 3 hours. The math begins.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">3:00 AM</div>
+      <div class="tl-event">Peak insomnia.</div>
+      <div class="tl-detail">The house hums. The walls breathe. You are the only person alive in the world right now.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">4:30 AM</div>
+      <div class="tl-event">The first bird.</div>
+      <div class="tl-detail">You hear it. A single note. And somehow that's worse than the silence.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-time">6:00 AM</div>
+      <div class="tl-event">The alarm.</div>
+      <div class="tl-detail">You finally drifted off at 5:47. You had exactly 13 minutes.</div>
+    </div>
+  </div>
+</section>
+
+<!-- MIND STATIC -->
+<div id="mind-static">
+  <div class="static-thoughts" id="static-thoughts"></div>
+  <div class="static-center">
+    <h2>The mind doesn't have an off switch.</h2>
+    <p>
+      Insomnia is not just the absence of sleep.<br/>
+      It is presence — full, excruciating presence —<br/>
+      in hours that were never meant to be witnessed.
+    </p>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">1 in 3</div>
+      <div class="stat-label">Adults affected</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3 AM</div>
+      <div class="stat-label">The darkest hour</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Thoughts per minute</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Sheep that helped</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-text">"The worst thing in the world is to try to sleep and not to."</div>
+  <div class="footer-sub">— F. Scott Fitzgerald</div>
+</footer>
+
+<script>
+  // ── CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX - 6 + 'px';
+    cursor.style.top = e.clientY - 6 + 'px';
+    ring.style.left = e.clientX - 18 + 'px';
+    ring.style.top = e.clientY - 18 + 'px';
+  });
+
+  // ── LIVE CLOCK
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('live-clock').textContent = `${h}:${m} ${ampm}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── HERO THOUGHT BUBBLES
+  const phrases = [
+    "can't sleep", "3 am again", "just close them",
+    "stop thinking", "why am I awake", "walls are humming",
+    "overthinking", "eyes burning", "breathe",
+    "tomorrow...", "did I lock the door?", "just five minutes"
+  ];
+  let thoughtInterval = null;
+  function spawnHeroThought() {
+    if (document.body.classList.contains('morning')) return;
+    const el = document.createElement('div');
+    el.className = 'thought-bubble';
+    el.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+    el.style.left = Math.random() * 80 + 10 + '%';
+    el.style.top = Math.random() * 70 + 15 + '%';
+    const dur = 4000 + Math.random() * 3000;
+    el.style.animationDuration = dur + 'ms';
+    document.getElementById('hero').appendChild(el);
+    setTimeout(() => el.remove(), dur + 100);
+  }
+  thoughtInterval = setInterval(spawnHeroThought, 1800);
+
+  // ── STATIC SECTION DRIFTING WORDS
+  const staticWords = [
+    "sleep", "rest", "peace", "quiet", "darkness", "still",
+    "silence", "dreams", "exhausted", "tired", "void", "night"
+  ];
+  const staticContainer = document.getElementById('static-thoughts');
+  function spawnStaticWord() {
+    const el = document.createElement('div');
+    el.className = 'static-word';
+    el.textContent = staticWords[Math.floor(Math.random() * staticWords.length)];
+    el.style.top = Math.random() * 90 + '%';
+    el.style.fontSize = (1 + Math.random() * 3) + 'rem';
+    const dur = 8000 + Math.random() * 10000;
+    el.style.animationDuration = dur + 'ms';
+    staticContainer.appendChild(el);
+    setTimeout(() => el.remove(), dur);
+  }
+  for (let i = 0; i < 8; i++) setTimeout(spawnStaticWord, i * 800);
+  setInterval(spawnStaticWord, 2000);
+
+  // ── TIMELINE SCROLL REVEAL
+  const tlItems = document.querySelectorAll('.tl-item');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), 100);
+    });
+  }, { threshold: 0.2 });
+  tlItems.forEach(el => obs.observe(el));
+
+  // ══════════════════════════════════════════
+  // ── AMBIENT SOUND ENGINE (Web Audio API)
+  // ══════════════════════════════════════════
+  let audioCtx = null;
+  let soundNodes = {};
+  let soundOn = false;
+
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  function createWhiteNoise(ctx) {
+    const bufferSize = ctx.sampleRate * 4;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    // filter to make it sound like ambient room hum
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
+
+    source.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    source.start();
+    return { source, gainNode };
+  }
+
+  function createClockTick(ctx) {
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
+    gainNode.connect(ctx.destination);
+
+    let tickInterval = null;
+    function tick() {
+      if (!soundOn) return;
+      // tick
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.frequency.value = 1200;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.04);
+
+      // tock after 0.5s
+      setTimeout(() => {
+        if (!soundOn) return;
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.frequency.value = 1000;
+        g2.gain.setValueAtTime(0.06, ctx.currentTime);
+        g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+        osc2.connect(g2);
+        g2.connect(ctx.destination);
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.04);
+      }, 500);
+    }
+
+    return {
+      start() { tickInterval = setInterval(tick, 1000); tick(); },
+      stop() { clearInterval(tickInterval); tickInterval = null; },
+      gainNode
+    };
+  }
+
+  function startSound() {
+    initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const noise = createWhiteNoise(audioCtx);
+    noise.gainNode.gain.setTargetAtTime(0.08, audioCtx.currentTime, 1.5);
+
+    const clock = createClockTick(audioCtx);
+    clock.start();
+
+    soundNodes = { noise, clock };
+  }
+
+  function stopSound() {
+    if (!soundNodes.noise) return;
+    soundNodes.noise.gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.8);
+    soundNodes.clock.stop();
+    setTimeout(() => {
+      try { soundNodes.noise.source.stop(); } catch(e) {}
+      soundNodes = {};
+    }, 2000);
+  }
+
+  function toggleSound() {
+    soundOn = !soundOn;
+    const btn = document.getElementById('sound-btn');
+    const icon = document.getElementById('sound-icon');
+    const label = document.getElementById('sound-label');
+    if (soundOn) {
+      startSound();
+      icon.textContent = '🔊';
+      label.textContent = 'Sound On';
+      btn.classList.add('active');
+    } else {
+      stopSound();
+      icon.textContent = '🔇';
+      label.textContent = 'Ambient Sound';
+      btn.classList.remove('active');
+    }
+  }
+
+  // ══════════════════════════════════════════
+  // ── MORNING MODE
+  // ══════════════════════════════════════════
+  let isMorning = false;
+
+  function playMorningSwell() {
+    initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // Soft warm chord swell — a gentle major chord
+    const freqs = [261.63, 329.63, 392.00, 523.25]; // C major
+    freqs.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const pan = audioCtx.createStereoPanner();
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      pan.pan.value = (i - 1.5) * 0.3;
+
+      gain.gain.setValueAtTime(0, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 2 + i * 0.3);
+      gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 5);
+      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 8);
+
+      osc.connect(gain);
+      gain.connect(pan);
+      pan.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 8);
+    });
+
+    // Also fade night sounds if on
+    if (soundOn && soundNodes.noise) {
+      soundNodes.noise.gainNode.gain.setTargetAtTime(0.02, audioCtx.currentTime, 2);
+      soundNodes.clock.stop();
+    }
+  }
+
+  function playNightReturn() {
+    if (soundOn && soundNodes.noise) {
+      soundNodes.noise.gainNode.gain.setTargetAtTime(0.08, audioCtx.currentTime, 1.5);
+      soundNodes.clock.start();
+    }
+  }
+
+  function toggleMorning() {
+    isMorning = !isMorning;
+    document.body.classList.toggle('morning', isMorning);
+
+    const icon = document.getElementById('morning-icon');
+    const label = document.getElementById('morning-label');
+    const btn = document.getElementById('morning-btn');
+
+    if (isMorning) {
+      icon.textContent = '☀️';
+      label.textContent = 'Morning';
+      btn.classList.add('active');
+      playMorningSwell();
+
+      // Remove jitter — morning is calm
+      document.body.style.animation = 'none';
+      document.querySelector('.grain').style.animationPlayState = 'paused';
+    } else {
+      icon.textContent = '🌙';
+      label.textContent = 'Night Mode';
+      btn.classList.remove('active');
+      playNightReturn();
+
+      document.body.style.animation = '';
+      document.querySelector('.grain').style.animationPlayState = 'running';
+    }
+  }
+</script>
+</body>
+</html>
